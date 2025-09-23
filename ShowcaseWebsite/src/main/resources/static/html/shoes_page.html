@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scarpe per Bambini - Collezione</title>
+    <link rel="stylesheet" href="../css/shoesStyle.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <a href="../index.html" class="logo">MisterJerry</a>
+                <ul class="nav-links">
+                    <li><a href="#bambini">Bambini</a></li>
+                    <li><a href="#primi-passi">Primi Passi</a></li>
+                    <li><a href="#cerimonia">Cerimonia</a></li>
+                    <li><a href="../index.html#contact" class="contact-btn">Contatti</a></li>
+                </ul>
+                <div class="mobile-menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Collezione Scarpe Bambini</h1>
+                <p>Scopri le nostre collezioni per ogni stagione e occasione. Comfort, stile e qualità per i piedi dei più piccoli.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <p>Caricamento scarpe...</p>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar Filters -->
+        <aside class="sidebar">
+            <h3>Filtri</h3>
+            
+            <div class="filter-group">
+                <h4>Categorie</h4>
+                <div class="filter-option">
+                    <input type="checkbox" id="bambini" value="bambini">
+                    <label for="bambini">Bambini</label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" id="primi-passi" value="primi-passi">
+                    <label for="primi-passi">Primi Passi</label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" id="cerimonia" value="cerimonia">
+                    <label for="cerimonia">Cerimonia</label>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <h4>Stagioni</h4>
+                <div class="filter-option">
+                    <input type="checkbox" id="autunno-inverno" value="autunno-inverno">
+                    <label for="autunno-inverno">Autunno/Inverno</label>
+                </div>
+                <div class="filter-option">
+                    <input type="checkbox" id="primavera-estate" value="primavera-estate">
+                    <label for="primavera-estate">Primavera/Estate</label>
+                </div>
+            </div>
+
+            <button class="clear-filters">Cancella Filtri</button>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <div class="results-header">
+                <span class="results-count">Mostrando <span id="count">0</span> prodotti</span>
+                <select class="sort-select">
+                    <option value="default">Ordina per</option>
+                    <option value="code">Codice A-Z</option>
+                    <option value="category">Categoria</option>
+                    <option value="season">Stagione</option>
+                </select>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Prodotti caricati dinamicamente -->
+            </div>
+
+            <div class="no-results hidden" id="no-results">
+                <h3>Nessun prodotto trovato</h3>
+                <p>Prova a modificare i filtri di ricerca</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <a href="#" class="logo">MisterJerry</a>
+                <div class="footer-links">
+                    <a href="#">Privacy</a>
+                    <a href="#">Termini di Servizio</a>
+                    <a href="../index.html#contact">Contatti</a>
+                    <a href="about_us.html">Chi Siamo</a>
+                </div>
+                <p>&copy; 2025 MisterJerry. Tutti i diritti riservati.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script API Client -->
+    <script src="../script/shoes-api-client.js"></script>
+    
+    <!-- Script Principale -->
+    <script>
+        // Configurazione API
+        const getApiConfig = () => {
+            const hostname = window.location.hostname;
+            return hostname === 'localhost' ? 'http://localhost:8080' : 'https://api.misterjerry.com';
+        };
+
+        // Inizializzazione
+        const api = new ShoesApiClient(getApiConfig());
+        let currentShoes = [];
+
+        // Avvio pagina
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllShoes();
+            setupEventListeners();
+        });
+
+        // Carica tutte le scarpe
+        async function loadAllShoes() {
+            showLoading(true);
+            try {
+                const shoes = await api.getAllShoes();
+                currentShoes = shoes;
+                displayShoes(shoes);
+                updateCount(shoes.length);
+            } catch (error) {
+                console.error('Errore caricamento scarpe:', error);
+                showError('Errore nel caricamento delle scarpe');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.querySelectorAll('.filter-option input').forEach(checkbox => {
+                checkbox.addEventListener('change', applyFilters);
+            });
+
+            document.querySelector('.clear-filters').addEventListener('click', clearFilters);
+
+            document.querySelector('.sort-select').addEventListener('change', function() {
+                if (this.value !== 'default') {
+                    sortShoes(this.value);
+                }
+            });
+        }
+
+        // Applica filtri
+        async function applyFilters() {
+            const selectedFilters = Array.from(document.querySelectorAll('.filter-option input:checked'))
+                .map(cb => cb.value);
+
+            if (selectedFilters.length === 0) {
+                displayShoes(currentShoes);
+                updateCount(currentShoes.length);
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const categories = selectedFilters.filter(f => ['bambini', 'primi-passi', 'cerimonia'].includes(f));
+                const seasons = selectedFilters.filter(f => ['autunno-inverno', 'primavera-estate'].includes(f));
+
+                const filters = {};
+                if (categories.length > 0) filters.categoria = categories[0];
+                if (seasons.length > 0) filters.stagione = seasons[0];
+
+                const shoes = await api.getFilteredShoes(filters);
+                displayShoes(shoes);
+                updateCount(shoes.length);
+            } catch (error) {
+                console.error('Errore filtri:', error);
+                showError('Errore nell\'applicazione dei filtri');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Visualizza scarpe
+        function displayShoes(shoes) {
+            const grid = document.getElementById('products-grid');
+            const noResults = document.getElementById('no-results');
+            
+            if (shoes.length === 0) {
+                grid.style.display = 'none';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            grid.style.display = 'grid';
+
+            grid.innerHTML = shoes.map(shoe => `
+                <div class="product-card">
+                    <div class="product-image">
+                        ${shoe.immagine_principale ? 
+                            `<img src="${api.getImageUrl(shoe.immagine_principale)}" 
+                                 alt="${shoe.codice}" 
+                                 loading="lazy"
+                                 onerror="this.parentElement.innerHTML='Nessuna immagine'">` :
+                            'Nessuna immagine'
+                        }
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-title">${shoe.codice || 'Codice non disponibile'}</h3>
+                        <p class="product-category">${api.getCategoryLabel(shoe.categoria)}</p>
+                        <span class="product-season ${getSeasonClass(shoe.stagione)}">${api.getSeasonLabel(shoe.stagione)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Utility functions
+        function getSeasonClass(season) {
+            const classes = {
+                'autunno-inverno': 'autumn-winter',
+                'primavera-estate': 'spring-summer'
+            };
+            return classes[season] || '';
+        }
+
+        function clearFilters() {
+            document.querySelectorAll('.filter-option input').forEach(cb => cb.checked = false);
+            document.querySelector('.sort-select').value = 'default';
+            displayShoes(currentShoes);
+            updateCount(currentShoes.length);
+        }
+
+        function sortShoes(sortBy) {
+            const sorted = [...currentShoes].sort((a, b) => {
+                switch(sortBy) {
+                    case 'code': return (a.codice || '').localeCompare(b.codice || '');
+                    case 'category': return (a.categoria || '').localeCompare(b.categoria || '');
+                    case 'season': return (a.stagione || '').localeCompare(b.stagione || '');
+                    default: return 0;
+                }
+            });
+            displayShoes(sorted);
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading-indicator');
+            loading.style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            console.error(message);
+        }
+
+        function updateCount(count) {
+            document.getElementById('count').textContent = count;
+        }
+    </script>
+
+    <style>
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #86868b;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f5f5f7;
+            border-top: 3px solid #0071e3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
+</body>
+</html>
