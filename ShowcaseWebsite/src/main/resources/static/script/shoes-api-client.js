@@ -86,8 +86,7 @@ class ShoesApiClient {
     getCategoryLabel(category) {
         const labels = {
             'bambini': 'Bambini',
-            'primi-passi': 'Primi Passi',
-            'cerimonia': 'Cerimonia'
+            'primi-passi': 'Primi Passi'
         };
         return labels[category] || category || 'Categoria non specificata';
     }
